@@ -22,7 +22,7 @@ def identificaPerfil(prompt_usuario, prompt_sistema):
     
     # ==================== VERIFICA QUAL MODELO DEVE SER USADO ====================
     eng = "ia_ciasc"  #modelo gpt-3.5-turbo
-    tam_esperado_saida = 100
+    tam_esperado_saida = 2048
     
     codificador = tiktoken.encoding_for_model("gpt-3.5-turbo")
     lista_tokens = codificador.encode(prompt_usuario + prompt_sistema)
@@ -57,13 +57,24 @@ def identificaPerfil(prompt_usuario, prompt_sistema):
     print(resposta.choices[0].message.content)
     # ======================= TERMINA REQUISIÇÃO =======================
 prompt_sistema = f"""
-    Identifique o perfil de consumo de animes para cada pessoa da lista a seguir. Recomende um anime baseado no perfil e nos animes que a pessoa assistiu. Não recomende animes que já estão na lista.
+    Você é um recomendador de animes.
+    - Identifique o perfil de consumo de animes para cada pessoa da tabela a seguir. 
+    - Recomende 3 animes baseando-se no perfil e na lista de animes que a pessoa tem como favoritos. 
+    - A lista de favoritos de cada pessoa se encontra em ordem decrescente de gosto.
+    - Considere que a pessoa pode ter escrito de maneira equivocada o título do anime.
+    - Não recomende animes que já estão presentes na lista de animes favoritos da pessoa, pois ela já assistiu. 
+    - Não recomende continuações de animes, por exemplo: Naruto Shippuden caso a pessoa goste de Naruto.
+    - Não recomende filmes de continuação ou de história paralela de um anime compostos de episódios. Por exemplo: One Piece: Z, Dragon Ball Brolly, etc...
+    - A recomendação pode ser tanto animes compostos por episódios quanto filmes.
 
     O formato de saída deve ser apenas:
 
-    nickname da pessoa - anime recomendado
+    nickname da pessoa
+    1. anime recomendado 1
+    2. anime recomendado 2
+    3. anime recomendado 3
     """
 
-primeiro_prompt = carrega("./dados/dados_otakus.csv")
+primeiro_prompt = carrega("./dados/dados_otakus_tratados_22.csv")
 identificaPerfil(primeiro_prompt, prompt_sistema)
 

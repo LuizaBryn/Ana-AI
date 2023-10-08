@@ -5,7 +5,7 @@ import os
 dotenv.load_dotenv()
 
 openai.api_type = "azure"
-openai.api_base = "https://ciasc-openai.openai.azure.com/"
+openai.api_base = "https://ciasc-openai.openai.azure.com/" #max tokens = 4096
 openai.api_version = "2023-07-01-preview"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
