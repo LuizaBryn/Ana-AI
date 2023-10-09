@@ -1,5 +1,5 @@
-import openai
 import os
+import openai
 import dotenv
 import tiktoken
 import time
@@ -30,7 +30,7 @@ def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
     
     # ==================== VERIFICA QUAL MODELO DEVE SER USADO ====================
     eng = "ia_ciasc"  #modelo gpt-3.5-turbo
-    tam_esperado_saida = 2048
+    tam_esperado_saida = 4000
     tentativa = 0
     tempo_de_tentativa = 5
     
@@ -60,14 +60,14 @@ def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
                     "content": prompt_usuario
                 }
             ],
-            temperature=1.3,
+            temperature=1.2,
             max_tokens=8000,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0,
             stop=None,
             )
-            salva(f"./dados/{nro_relatorio}-relatorio2-otakus", resposta.choices[0].message.content)
+            salva(f"./dados/{nro_relatorio}-relatorio3-otakus", resposta.choices[0].message.content)
             print("Relatório criado com sucesso!")
             return
         # Tratamento de ERROS:
@@ -86,14 +86,20 @@ def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
 
     # ======================= TERMINA REQUISIÇÃO =======================
 prompt_sistema = f"""
-    Você é um analisador de gostos e recomendador de animes.
-    - Identifique o gosto de consumo de animes para cada pessoa da tabela a seguir. Cada linha se refere a uma pessoa. 
-    - Recomende 3 animes baseando-se na preferência dela e na lista de animes que a pessoa tem como favoritos. 
-    - A lista de favoritos de cada pessoa se encontra em ordem decrescente de gosto(1º lugar podendo chegar até o 10º lugar).
-    - JAMAIS recomende animes que já estão presentes na lista de animes da pessoa. 
-    - Considere que a pessoa pode ter escrito de maneira equivocada o título do anime.
-    - Não recomende continuações de animes, por exemplo: Naruto Shippuden caso a pessoa goste de Naruto.
-    - Não recomende filmes de continuação ou de história paralela de um anime compostos de episódios. Por exemplo: One Piece: Z, Dragon Ball Brolly, etc...
+    Você é um analisador de gostos e recomendador de animes. Relacione os animes preferidos e os animes odiados com o texto relatando a preferência da pessoa. Após isso, recomende animes que possivelmente a pessoa venha gostar.
+    
+    ####Regras importantes:
+
+    - Recomende 3 animes;
+    - A lista de favoritos de cada pessoa se encontra em ordem decrescente de gosto(1° lugar podendo chegar até o 10° lugar);
+    - Ao analisar o genero favorito da pessoa tenha base os animes favoritos presentes das colunas "1°lugar", "2°lugar", "3°lugar", "4°lugar", "5°lugar6°lugar7°lugar8°lugar9°lugar10°lugar11°lugar"
+    - JAMAIS recomende animes que já estão presentes na lista de animes da pessoa;
+    - JAMAIS recomende animes que já estão presentes na coluna "Animes ruins";
+    - JAMAIS recomende animes que já estão presentes na coluna "Animes péssimos";
+    - JAMAIS recomende animes parecidos com os da coluna "Animes ruins";
+    - JAMAIS recomende animes parecidos com os da  coluna "Animes péssimos";
+    - NÃO recomende continuações de animes, por exemplo: Naruto Shippuden caso a pessoa goste de Naruto;
+    - NÃO recomende filmes de continuação ou de história paralela de um anime compostos de episódios. Por exemplo: One Piece: Z, Dragon Ball Brolly, etc;
     - A recomendação pode ser tanto animes compostos por episódios quanto filmes.
 
     ####Formato de saída deve ser apenas:
@@ -103,8 +109,8 @@ prompt_sistema = f"""
     1. [anime recomendado 1]
     2. [anime recomendado 2]
     3. [anime recomendado 3]
-    Justificativa:[Motivo pelo qual estas 3 recomendações acima são boas para a pessoa. No máximo 20 palavras.]
-    Genêro Favorito:[A resposta deve ser um desses: SHOUJO, SEINEN, SHOUNEN, ISEKAI, ECCHI, HENTAI, JOSEI, KODOMO, HAREM, SLICE OF LIFE, MECHA, KEMONO ou MAHOU SHOUJO]
+    Justificativa:[Motivo pelo qual os 3 animes acima são boas recomendações para a pessoa. No máximo 20 palavras.]
+    Genêro Favorito:[A resposta deve ser somente um desses: SHOUJO, SEINEN, SHOUNEN, ISEKAI, ECCHI, HENTAI, JOSEI, KODOMO, HAREM, SLICE OF LIFE, MECHA, KEMONO ou MAHOU SHOUJO]
     """
 # =========== COMEÇO DO PROGRAMA =============
 
