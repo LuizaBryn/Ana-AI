@@ -39,7 +39,7 @@ def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
     nro_tokens = len(lista_tokens)
     print(f"Número de tokens de entrada:{nro_tokens}")
 
-    if nro_tokens >= 4096 - tam_esperado_saida:
+    if nro_tokens >= 8000 - tam_esperado_saida:
       eng = "ia_ciasc_16k" #modelo gpt-3.5-turbo-16k
     print(f"Implementação escolhida: {eng}")
     # ==================== FIM DA VERIFICAÇÃO ====================
