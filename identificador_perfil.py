@@ -178,7 +178,62 @@ def recomendaAnime(gosto, animes_assistidos, animes_p, animes_n, animes):
             print("Erro de taxa limite de requisição:", e)
             tempo_de_tentativa *= 2 #tecnica usada para não exagerar nas requisições
       
+def escreve_email(recomendacoes, nome):
+    
+    # ==================== VERIFICA QUAL MODELO DEVE SER USADO ====================
+    eng = "ia_ciasc"  #modelo gpt-3.5-turbo
+    tentativa = 0
+    tempo_de_tentativa = 5
 
+    # ==================== FIM DA VERIFICAÇÃO ====================
+
+    # ================ USA REQUISIÇÃO ========================
+    while tentativa <= 3:
+        tentativa += 1
+        try: 
+            resposta = openai.ChatCompletion.create(
+            engine=eng,
+            messages=[
+                {
+                "role": "system",
+                "content": f"""
+                Escreva um e-mail recomendando os seguintes animes para {nome}:
+                
+                {recomendacoes}
+
+                O e-mail deve ter no máximo 3 parágrafos.
+                Se apresente como uma IA chamada AnIA que ama animes e esta em processo de desenvolvimento.
+                Agradeça pela disposição da pessoa em participar da pesquisa.
+                Peça de maneira amigável e educada para a pessoa preencher o formulário de Feedback para ajudar no melhoramento
+                Link do formulário: https://forms.gle/eh82ykaPQjvU16Jf8
+                O tom deve ser amigável, informal e descontraído.
+                Trate o cliente como alguém próximo e conhecido
+                """
+                }
+            ],
+            temperature=1.2,
+            max_tokens=8000,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            stop=None,
+            )
+            resultado = resposta.choices[0].message.content
+            print("===========Término de recomendações==========")
+            return resultado
+
+        # Tratamento de ERROS:
+        except openai.error.AuthenticationError as e:
+            print("Erro de Autenticação:", e)
+        except openai.error.APIError as e:
+            print("Erro de API:", e)
+            if tentativa != 3:
+                print("Aguarde. Tentando requisição novamente...")
+            time.sleep(15)
+        except openai.error.RateLimitError as e:
+            print("Erro de taxa limite de requisição:", e)
+            tempo_de_tentativa *= 2 #tecnica usada para não exagerar nas requisições
+      
 # ======================= DEFINICAO DE VARIAVEIS =======================
 lista_animes = carrega("./dados/animes.csv")
 # =========== COMEÇO DO PROGRAMA ============
@@ -203,4 +258,6 @@ for perfil in perfis["pessoa"]:
                                        perfil["animes_preferidos"],
                                        perfil["animes_odiados"],
                                        lista_animes)
-    print(recomendacoes)
+    email = escreve_email(recomendacoes, p_nickname)
+    salva(f"./emails/primeiro-email-{p_nickname}.txt", email)
+
