@@ -3,6 +3,7 @@ import openai
 import dotenv
 import tiktoken
 import time
+import json
 
 dotenv.load_dotenv()
 
@@ -26,7 +27,7 @@ def salva(nome_do_arquivo, conteudo):
     except IOError as e:
         print(f"Erro ao salvar arquivo: {e}")
 
-def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
+def identificaPerfil(prompt_usuario):
     
     # ==================== VERIFICA QUAL MODELO DEVE SER USADO ====================
     eng = "ia_ciasc"  #modelo gpt-3.5-turbo
@@ -35,7 +36,7 @@ def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
     tempo_de_tentativa = 5
     
     codificador = tiktoken.encoding_for_model("gpt-3.5-turbo")
-    lista_tokens = codificador.encode(prompt_usuario + prompt_sistema)
+    lista_tokens = codificador.encode(prompt_usuario)
     nro_tokens = len(lista_tokens)
     print(f"Número de tokens de entrada:{nro_tokens}")
 
@@ -53,7 +54,39 @@ def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
             messages=[
                 {
                 "role": "system",
-                "content": prompt_sistema
+                "content":  """
+    Você é um analisador de gostos em animes. 
+    Relacione: animes preferidos("1° Lugar" ao "10° Lugar"), 
+    animes odiados("Anime ruim" e "Anime péssimo") e 
+    "Preferência" da pessoa.
+    Resuma o gosto da pessoa entre 5 e 10 palavras   
+
+    ####Formato de saída deve ser em JSON:
+    {
+        "pessoa": [
+        {
+            "nickname": "nickname da pessoa",
+            "animes_assistidos": "todos os animes listados pela pessoa",
+            "animes_preferidos": "todos os animes citados em 1° Lugar, 2° Lugar, 3° Lugar, 4° Lugar, 5° Lugar, 6° Lugar, 7° Lugar, 8° Lugar, 9° Lugar e/ou 10° Lugar",
+            "animes_odiados": "todos os animes citados em 'anime ruim' e 'anime péssimo'",
+            "gosto": "o gosto da pessoa de acordo com as preferencias e os animes preferidos e os animes odiados em 5 palavras"
+        }
+        ]
+    }
+
+    ###EXEMPLO
+    {
+        "pessoa": [
+        {
+            "nickname": JoaozinhoSilva,
+            "animes_assistidos": Another, One Piece, Hunter x Hunter, Shiki, Naruto, Haikyuu, Attack on Tintan.,
+            "animes_preferidos": One Piece, Hunter x Hunter, Shiki, Haikyuu, Attack on Titan.,
+            "animes_odiados": Another, Naruto.,
+            "gosto": aventura, lições, lutas, reviravoltas, romance, shounen, seinen, amizade, imprevisivel, elaborado.
+        }
+        ]
+    }
+    """
                 },
                 {
                     "role": "user",
@@ -67,9 +100,72 @@ def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
             presence_penalty=0,
             stop=None,
             )
-            salva(f"./dados/{nro_relatorio}-relatorio3-otakus", resposta.choices[0].message.content)
-            print("Relatório criado com sucesso!")
-            return
+            resultado = resposta.choices[0].message.content
+            json_resultado = json.loads(resultado)
+            print("Resultado JSON criado com sucesso!")
+            return json_resultado
+
+        # Tratamento de ERROS:
+        except openai.error.AuthenticationError as e:
+            print("Erro de Autenticação:", e)
+        except openai.error.APIError as e:
+            print("Erro de API:", e)
+            if tentativa != 3:
+                print("Aguarde. Tentando requisição novamente...")
+            time.sleep(15)
+        except openai.error.RateLimitError as e:
+            print("Erro de taxa limite de requisição:", e)
+            tempo_de_tentativa *= 2 #tecnica usada para não exagerar nas requisições
+
+def recomendaAnime(gosto, animes_assistidos, animes_p, animes_n, animes):
+    
+    # ==================== VERIFICA QUAL MODELO DEVE SER USADO ====================
+    eng = "ia_ciasc"  #modelo gpt-3.5-turbo
+    tentativa = 0
+    tempo_de_tentativa = 5
+
+    # ==================== FIM DA VERIFICAÇÃO ====================
+
+    # ================ USA REQUISIÇÃO ========================
+    while tentativa <= 3:
+        tentativa += 1
+        try: 
+            resposta = openai.ChatCompletion.create(
+            engine=eng,
+            messages=[
+                {
+                "role": "system",
+                "content": f"""
+    Você é um recomendador de animes.
+    Considere o seguinte gosto: {gosto}
+    Considere os animes assistidos: {animes_assistidos}
+    Considere os animes preferidos:{animes_p}
+    Considere os animes odiados:{animes_n}
+    Recomende 3 animes a partir da lista de animes válidos e que sejam adequados ao perfil informados e as regras informadas.
+
+    ####Regras importantes:
+    - JAMAIS recomende animes da lista de animes da pessoa
+    - Não recomende animes parecidos com os animes odiados
+    - Se possível, recomende animes parecidos com os animes preferidos
+
+    ####Lista de animes válidos para recomendação (exceto os quais a pessoa já assistiu)
+    {animes} 
+
+    A saída deve ser apenas o nome dos animes recomendados em bullet points
+    """
+                }
+            ],
+            temperature=1.2,
+            max_tokens=8000,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            stop=None,
+            )
+            resultado = resposta.choices[0].message.content
+            print("===========Término de recomendações==========")
+            return resultado
+
         # Tratamento de ERROS:
         except openai.error.AuthenticationError as e:
             print("Erro de Autenticação:", e)
@@ -83,44 +179,15 @@ def identificaPerfil(prompt_usuario, prompt_sistema, nro_relatorio):
             tempo_de_tentativa *= 2 #tecnica usada para não exagerar nas requisições
       
 
-
-    # ======================= TERMINA REQUISIÇÃO =======================
-prompt_sistema = f"""
-    Você é um analisador de gostos e recomendador de animes. Relacione os animes preferidos e os animes odiados com o texto relatando a preferência da pessoa. Após isso, recomende animes que possivelmente a pessoa venha gostar.
-    
-    ####Regras importantes:
-
-    - Recomende 3 animes;
-    - A lista de favoritos de cada pessoa se encontra em ordem decrescente de gosto(1° lugar podendo chegar até o 10° lugar);
-    - Ao analisar o genero favorito da pessoa tenha base os animes favoritos presentes das colunas "1°lugar", "2°lugar", "3°lugar", "4°lugar", "5°lugar6°lugar7°lugar8°lugar9°lugar10°lugar11°lugar"
-    - JAMAIS recomende animes que já estão presentes na lista de animes da pessoa;
-    - JAMAIS recomende animes que já estão presentes na coluna "Animes ruins";
-    - JAMAIS recomende animes que já estão presentes na coluna "Animes péssimos";
-    - JAMAIS recomende animes parecidos com os da coluna "Animes ruins";
-    - JAMAIS recomende animes parecidos com os da  coluna "Animes péssimos";
-    - NÃO recomende continuações de animes, por exemplo: Naruto Shippuden caso a pessoa goste de Naruto;
-    - NÃO recomende filmes de continuação ou de história paralela de um anime compostos de episódios. Por exemplo: One Piece: Z, Dragon Ball Brolly, etc;
-    - A recomendação pode ser tanto animes compostos por episódios quanto filmes.
-
-    ####Formato de saída deve ser apenas:
-
-    Nick: [nickname da pessoa]
-    Animes Recomendados:
-    1. [anime recomendado 1]
-    2. [anime recomendado 2]
-    3. [anime recomendado 3]
-    Justificativa:[Motivo pelo qual os 3 animes acima são boas recomendações para a pessoa. No máximo 20 palavras.]
-    Genêro Favorito:[A resposta deve ser somente um desses: SHOUJO, SEINEN, SHOUNEN, ISEKAI, ECCHI, HENTAI, JOSEI, KODOMO, HAREM, SLICE OF LIFE, MECHA, KEMONO ou MAHOU SHOUJO]
-    """
-# =========== COMEÇO DO PROGRAMA =============
-
-print("Gostaria de analisar como? \n 1. Apenas um arquivo \n 2. Varios arquivos \n 3. Sair")
+# ======================= DEFINICAO DE VARIAVEIS =======================
+lista_animes = carrega("./dados/animes.csv")
+print("Gostaria de analisar como? \n 1. Apenas um arquivo \n 2. Varios arquivos \n 0. Sair")
 escolha = int(input("Digite sua escolha: "))
 
 while escolha > 2 or escolha < 0:
     print("escolha entre as opções 1, 2 ou 0")
     escolha = int(input("Digite sua escolha: "))
-
+# =========== COMEÇO DO PROGRAMA ============
     #TESTES INDIVIDUAIS
 if escolha == 1:
     print("Qual arquivo gostaria? \n 0 - Todos \n 1 a 11 - Grupo [sua escolha] ")
@@ -131,12 +198,23 @@ if escolha == 1:
         arquivo = f"./dados/dados_otakus.csv"
     else:
         print("Escolha corretamente")
+
     prompt_user = carrega(arquivo)
-    identificaPerfil(prompt_user, prompt_sistema, escolha_arq)
+    perfis = identificaPerfil(prompt_user)
+    for perfil in perfis["pessoa"]:
+        p_nickname = perfil["nickname"]
+        print(f"Recomendação para: {p_nickname}")
+        recomendacoes = recomendaAnime(perfil["gosto"],
+                                       perfil["animes_assistidos"],
+                                       perfil["animes_preferidos"],
+                                       perfil["animes_odiados"],
+                                       lista_animes)
+        print(recomendacoes)
 
     #TESTES COM GRUPOS DE ARQUIVOS
 elif escolha == 2:
     lista_arquivos = []
+    conjunto_perfis = []
     print("Escolha os arquivos de 1 a 11. Quando quiser parar de adicionar, selecione 0: ")
     print("")
     escolha_arq = int(input("Adicione um arquivo: "))
@@ -150,8 +228,12 @@ elif escolha == 2:
     print(lista_arquivos)
     for nome_do_arquivo in lista_arquivos:
         prompt_user = carrega(nome_do_arquivo)
-        identificaPerfil(prompt_user, prompt_sistema, (lista_arquivos.index(nome_do_arquivo)+1))
+        id_relatorio = lista_arquivos.index(nome_do_arquivo)+1 #usar isso depois?
+        perfis = identificaPerfil(prompt_user)
+        conjunto_perfis.append(perfis)
 
 elif escolha == 0:
     print("ok, tchau!")
+
+
 
