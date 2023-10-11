@@ -181,59 +181,26 @@ def recomendaAnime(gosto, animes_assistidos, animes_p, animes_n, animes):
 
 # ======================= DEFINICAO DE VARIAVEIS =======================
 lista_animes = carrega("./dados/animes.csv")
-print("Gostaria de analisar como? \n 1. Apenas um arquivo \n 2. Varios arquivos \n 0. Sair")
-escolha = int(input("Digite sua escolha: "))
-
-while escolha > 2 or escolha < 0:
-    print("escolha entre as opções 1, 2 ou 0")
-    escolha = int(input("Digite sua escolha: "))
 # =========== COMEÇO DO PROGRAMA ============
-    #TESTES INDIVIDUAIS
-if escolha == 1:
-    print("Qual arquivo gostaria? \n 0 - Todos \n 1 a 11 - Grupo [sua escolha] ")
-    escolha_arq = int(input("Resposta: "))
-    if escolha_arq > 0 and escolha_arq <= 11:
-        arquivo = f"./dados/dados_grupo{escolha_arq}.csv"
-    elif escolha_arq == 0:
-        arquivo = f"./dados/dados_otakus.csv"
-    else:
-        print("Escolha corretamente")
 
-    prompt_user = carrega(arquivo)
-    perfis = identificaPerfil(prompt_user)
-    for perfil in perfis["pessoa"]:
-        p_nickname = perfil["nickname"]
-        print(f"Recomendação para: {p_nickname}")
-        recomendacoes = recomendaAnime(perfil["gosto"],
+print("Qual arquivo gostaria? \n 0 - Todos \n 1 a 11 - Grupo [sua escolha] ")
+escolha_arq = int(input("Resposta: "))
+
+if escolha_arq > 0 and escolha_arq <= 11:
+    arquivo = f"./dados/dados_grupo{escolha_arq}.csv"
+elif escolha_arq == 0:
+    arquivo = f"./dados/dados_otakus.csv"
+else:
+    print("Escolha corretamente")
+
+prompt_user = carrega(arquivo)
+perfis = identificaPerfil(prompt_user)
+for perfil in perfis["pessoa"]:
+    p_nickname = perfil["nickname"]
+    print(f"Recomendação para: {p_nickname}")
+    recomendacoes = recomendaAnime(perfil["gosto"],
                                        perfil["animes_assistidos"],
                                        perfil["animes_preferidos"],
                                        perfil["animes_odiados"],
                                        lista_animes)
-        print(recomendacoes)
-
-    #TESTES COM GRUPOS DE ARQUIVOS
-elif escolha == 2:
-    lista_arquivos = []
-    conjunto_perfis = []
-    print("Escolha os arquivos de 1 a 11. Quando quiser parar de adicionar, selecione 0: ")
-    print("")
-    escolha_arq = int(input("Adicione um arquivo: "))
-    while escolha_arq != 0:
-        if f"./dados/dados_grupo{escolha_arq}.csv" in lista_arquivos:
-            print(escolha_arq, "Já existe esse arquivo na lista")
-        else:
-            lista_arquivos.append(f"./dados/dados_grupo{escolha_arq}.csv")
-            print("Arquivo",escolha_arq,"adicionado a lista")
-        escolha_arq = int(input("Adicione um arquivo: "))
-    print(lista_arquivos)
-    for nome_do_arquivo in lista_arquivos:
-        prompt_user = carrega(nome_do_arquivo)
-        id_relatorio = lista_arquivos.index(nome_do_arquivo)+1 #usar isso depois?
-        perfis = identificaPerfil(prompt_user)
-        conjunto_perfis.append(perfis)
-
-elif escolha == 0:
-    print("ok, tchau!")
-
-
-
+    print(recomendacoes)
