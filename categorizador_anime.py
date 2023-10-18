@@ -22,7 +22,7 @@ def categorizaAnime(nome_do_anime, generos_validos):
     Shounen
     """
     resposta = openai.ChatCompletion.create(
-    engine="exercicio_azure_learn",
+    engine="ia_ciasc",
     messages=[
         {
         "role": "system",
